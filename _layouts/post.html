@@ -3,6 +3,29 @@ layout: default
 ---
 
 <div class="post">
+   <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+
+<script type="text/x-mathjax-config">
+
+MathJax.Hub.Config({
+  jax: ["input/TeX","output/HTML-CSS"],
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+  CommonHTML: {
+    linebreaks: {automatic: true}
+  }
+});
+
+MathJax.Hub.Register.StartupHook("End Jax",function () {
+  var BROWSER = MathJax.Hub.Browser;
+  var jax = "HTML-CSS";
+//  if (BROWSER.isMSIE && BROWSER.hasMathPlayer) jax = "NativeMML";
+//  if (BROWSER.isFirefox) jax = "SVG";
+//  if (BROWSER.isSafari && BROWSER.versionAtLeast("5.0")) jax = "NativeMML";
+  return MathJax.Hub.setRenderer("SVG");
+});
+</script>
+
+
   <div class="post-info">
     <span>Written by</span>
     {% if page.author %}
