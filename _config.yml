@@ -4,8 +4,8 @@ permalink:      /:year-:month-:day/:title
 # Setup
 title:          Artem's Blog
 paginate:       5
-baseurl:        "/blog"
-url:            "https://chesterhow.github.io"
+baseurl:        /blog
+url:            "https://arakcheev.github.io/blog/"
 
 # Assets
 sass:
