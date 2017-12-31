@@ -30,3 +30,4 @@ github:
 # Gems
 plugins:
   - jekyll-paginate
+  - jekyll-seo-tag
