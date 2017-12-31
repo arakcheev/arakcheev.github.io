@@ -358,7 +358,7 @@ print(stoch_grad_desc_weights)
 plot(range(len(stoch_errors_by_iter)), stoch_errors_by_iter)
 ```
 
-![График убывания квадратичной ошибки](/assets/images/mse_by_iterations.png)
+![График убывания квадратичной ошибки]({{site.url}}/assets/images/mse_by_iterations.png)
 
 Интересно отметить, что значения получились почти такие же, как и в случае решения линейных уравнений. Примерно такой же получается ошибка: 0.10235771 против 0.102275. 
 
