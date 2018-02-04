@@ -6,7 +6,7 @@ author: "Artem"
 category: ml
 ---
 
-Здесь я хочу разобрать задания из курса https://www.coursera.org/learn/supervised-learning/. Задания неплохо (на мой взгляд) связывают [теорию]({{ site.baseurl }}{% post_url 2018-02-03-decision_trees %}) и практику и показывает основные особенности работы со случайным лесом, что очень полезно для практики. Я сначала разберу задание по случайному лесу а затем по градиентному бустингу.  
+Здесь я хочу разобрать задания из курса [https://www.coursera.org/learn/supervised-learning/](https://www.coursera.org/learn/supervised-learning/). Задания неплохо (на мой взгляд) связывают [теорию]({{ site.baseurl }}{% post_url 2018-02-03-decision_trees %}) и практику и показывает основные особенности работы со случайным лесом, что очень полезно для практики. Я сначала разберу задание по случайному лесу а затем по градиентному бустингу.  
 
 ## Случайный лес.
 
@@ -267,4 +267,132 @@ plot_rf_tree_depth()
 Таким образом решающие деревья и их композиции очень крутой и простой инструмент машинного обучения. Случайный лес работает из коробки и позволяет достичь очень большой точности даже на стандартных параметрах. 
 
 ## Градиентный бустинг
+
+В этом задании нужно будет реализовать градиентный бустинг над деревьями своими руками, благо  сделать это не сложно. Мы будем работать с другим датасетом *boston* для задачи регресии (видимо, потому что производную считать просто). Загрузим датасет и подготовим данные 
+
+```python
+from sklearn.datasets import load_boston
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error
+
+boston = load_boston()
+X = boston.data
+Y = boston.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25, random_state=51)
+
+print(X.shape, Y.shape)
+
+#(506, 13), (506,)
+```
+
+Всего у нас 506 объектов. Мы 25% выборки откладываем на тест. Отлично, теперь можно приступать к заданию. Нужно построить градиентный бустинг для 50 деревьев *DecisionTreeRegressor(max_depth=5, random_state=42)* на датасете. Из теории мы помним, что каждое новое дерево обучается на антиградиенте ошибки композии по прошлым деревьям. Ошибка в этом случае считается как квадрат отклонения предсказания композиции от истинного ответа. Значит, что бы обучать каждое новое дерево нужно считать градиент квадратичной функции потерь. Далее, после обучения нового дерева его нужно с неким коэффициентом добавить в композицию. После 50 итераций это и будет наш бустинг. 
+
+Итак, начнем с производной. Нам нудно найти такой вектор $\bar{\xi}$, чтобы он минимизировал среднеквадратичную ошибку: 
+$$
+\sum_{i=0}^{l} \mathbb{L}(y_i, a_{N-1}(x_i) + \xi_i)  =  \sum_{i=0}^{l} (y_i - (a_{N-1}(x_i) + \xi_i))^2 \to \min_{\xi}.
+$$
+Этот вектор будет равен вектору антиградиента, где каждая компонента это частная производная по $\xi_i$ (знак + потому что антиградиент уже учтен): 
+$$
+\xi_i = 2(y_i - a_{N-1}(x_i)).
+$$
+Теперь вектор антиградиента мы знаем, поэтому можно начать обучать алгоритмы на этот вектор. Предлагается использовать следующую функцию для удобства 
+
+```python
+def gbm_predict(X):
+	return [sum([coeff * algo.predict([x])[0] for algo, coeff in zip(base_algorithms_list, coefficients_list)])
+                for x in X]
+```
+
+Для каждого элемента в выборке $X$ считается сумма предсказаний алгоритма *algo* из массива алгоритмов *base_algorithms_list* вместе коэффициентами из массива *coefficients_list*. Что бы нам посчитать градиенты, нам нужны ответы и предсказания композиции для прошлого шага. Так и запишем (двойка в производной опущена по рекомендации): 
+
+```Python
+ base_algorithms_list = []
+ coefficients_list = []
+ 
+ def get_grad():
+ 	return [y - a for a, y in zip(gbm_predict(X_train), y_train) ]
+    #or more simple "return y_train - gbm_predict(X_train)"
+```
+
+ Эта функция будет возвращать пересчитанный антиградиент композиции. Теперь нужно обучить 50 деревьев на этих градиентах: 
+
+```python
+for i in np.arange(0, 50):
+    #create new algorithm 
+	rg = DecisionTreeRegressor(random_state=42, max_depth=5)
+    #fit algo in train dataset and new target
+    rg.fit(X_train, get_grad())
+    #append results    
+    base_algorithms_list.append(rg)
+    coefficients_list.append(0.9)
+    
+pred = gbm_predict(X_test)
+np.sqrt(mean_squared_error(y_test, pred))  
+
+#5.5535953749130931
+```
+
+Видно, что средняя квадратичная ошибка по отложенной выборке составляет 5.55. Далее предлагают посмотреть, что если коэффициенты будет зависеть от номера итерации? 
+
+```python
+...
+coefficients_list.append(0.9)
+...
+
+#5.3396087389433395
+```
+
+На самом деле у меня ошибка не сильно упала. Давайте посмотрим, как справится с этой задачей нормальный градиентный бустинг. 
+
+```python
+from xgboost import XGBRegressor
+
+xbg = XGBRegressor(n_estimators=50, max_depth=5)
+xbg.fit(X_train, y_train)
+pred = algo.predict(X_test)
+np.sqrt(mean_squared_error(y_test, pred))
+
+#3.5284927341941295
+```
+
+Видно, что ошибка не сильно отличается. Давайте понаблюдаем, как результат будет зависеть от числа деревьев и глубины?
+
+```python
+def test_xbg():
+    plt.figure(figsize=(15,8))
+    
+    trees = [50, 100, 200, 300, 400, 500, 1000]
+    errors = []
+    for tree in trees:
+        errors.append(
+                -cross_val_score(XGBRegressor(n_estimators=tree), X, Y,  scoring='neg_mean_squared_error').mean()
+        )
+    plt.subplot(121)
+    plt.plot(trees, errors)
+    plt.xlabel("trees")
+    plt.ylabel("error")
+    plt.title("number trees")
+    
+    depth = [2, 4, 6, 8, 20]
+    errors = []
+    for d in depth:
+        errors.append(
+                -cross_val_score(XGBRegressor(max_depth=d), X, Y,  scoring='neg_mean_squared_error').mean()
+        )
+    plt.subplot(122)
+    plt.plot(depth, errors)
+    plt.xlabel("depth")
+    plt.ylabel("error")
+    plt.title("tree depth")    
+    plt.show()
+test_xbg()
+```
+
+![test_xgb.png]({{site.url}}/assets/images/test_xgb.png)
+
+Из графиков видно, что алгоритм сильно переобучается с ростом глубины дерева. Примерно тоже самое наблюдается для числа деревьев. Т.е. рекомендации простые - аккуратно увеличивать число деревьев и их глубину пока это будет снижать ошибку. Ну и напоследок предлагается сравнить результат с линейной регрессией, но я пропущу этот шаг. Понятно, что простая модель не может восстановить сложную зависимость в данных. 
+
+1. [https://www.coursera.org/learn/supervised-learning/](https://www.coursera.org/learn/supervised-learning/)
+2. [https://machinelearningmastery.com/configure-gradient-boosting-algorithm/](https://machinelearningmastery.com/configure-gradient-boosting-algorithm/) 
 
