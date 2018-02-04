@@ -1,5 +1,6 @@
 ---
 layout: post
+comments: true
 title: "Решающие деревья и их композиции"
 author: "Artem"
 category: ml,analisys
