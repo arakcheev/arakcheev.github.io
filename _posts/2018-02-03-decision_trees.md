@@ -132,7 +132,7 @@ $$
 Я рассмотрел основные способы построения решающих деревьев. Как правило их хватает для решения большинства задач. На самом деле есть еще варианты, но я их не здесь не рассматривал. Далее я покажу несколько примеров использования деревьев. 
 
 
-1. https://habrahabr.ru/company/ods/blog/324402/#4-plyusy-i-minusy-sluchaynogo-lesa
+1. https://habrahabr.ru/company/ods/blog/324402/ 
 2. https://www.coursera.org/learn/supervised-learning/
 3. http://www.machinelearning.ru/wiki/images/1/1f/Sem05_ensembles.pdf
 
